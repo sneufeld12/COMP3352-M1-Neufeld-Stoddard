@@ -15,3 +15,5 @@ data Exp
 
 newtype Program = Program Exp
   deriving (Eq, Show)
+
+type N1 = Program

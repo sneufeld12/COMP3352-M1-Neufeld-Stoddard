@@ -4,65 +4,81 @@ import N1
 import Env (Env, makeEnv, lookupEnv, extendEnv)
 import CompilerPasses
 
--- State for uniquify: environment + fresh counter
+-- this is the state we'll use for the uniquefy pass, it has
+-- an environment which we'll adjust as we enter let expressions
+-- and an Integer which will be used for generating symbol names
 data UniquifyState = UState (Env String) Integer
-  deriving (Eq, Show)
 
--- Extract result from a pass over Program
-getResult :: CompilerResult st Program -> Result Program
-getResult (CState _ res) = res
+-- a uniquify result is a compiler result with our state and an N1 Exp
+type UniquifyResult = CompilerResult UniquifyState Exp
 
--- Top-level uniquify pass
-uniquify :: Program -> CompilerResult UniquifyState Program
-uniquify (Program e) =
-  case uniquifyExp e (UState makeEnv 0) of
-    CState st (Right e') -> CState st (Right (Program e'))
-    CState st (Left msg) -> CState st (Left msg)
+-- a helper function to pull out the result from the compiler result
+getResult :: CompilerResult UniquifyState N1 -> Result N1
+getResult (CState _ (Right p)) = Right p
+getResult (CState _ err)       = err
 
--- Generate a fresh variable name
-freshName :: String -> UniquifyState -> (String, UniquifyState)
-freshName _ (UState env n) =
-  let x' = "s" ++ show n
-  in (x', UState env (n + 1))
+{--
+  The uniquify pass transforms an N1 program into another
+  N1 program, but ensures that every variable name is unique!
+--}
+uniquify :: N1 -> CompilerResult UniquifyState N1
+uniquify (Program exp) =
+  case uniquifyExp exp (UState Env.makeEnv 0) of
+    CState state (Right exp') -> CState state (Right (Program exp'))
+    CState state (Left msg)   -> CState state (Left msg)
 
--- Core uniquify function
-uniquifyExp :: Exp -> UniquifyState -> CompilerResult UniquifyState Exp
+{--
+  uniquifyExp transforms an expression in N1 to another
+  expression in N1 where the variables have been renamed. We
+  pass UniquifyState along with the Exp and get a result. Note
+  that this result also contains a UniquifyState, which allows
+  us to update it from calls down further in the AST as we 
+  recurse through it. 
+--}
+uniquifyExp :: Exp -> UniquifyState -> UniquifyResult
 
-uniquifyExp (Int n) st =
-  CState st (Right (Int n))
+-- uniquifying an Int is simple, it doesn't change the state,
+-- and just returns the int expression
+uniquifyExp v@(Int _) state =
+  CState state (Right v)
 
-uniquifyExp Read st =
-  CState st (Right Read)
+-- uniquifying Read is also straightforward, the state doesn't change
+uniquifyExp r@Read state =
+  CState state (Right r)
 
-uniquifyExp (Var x) st@(UState env _) =
-  case lookupEnv x env of
-    Just x' -> CState st (Right (Var x'))
-    Nothing -> CState st (Left ("Symbol '" ++ x ++ "' not found"))
+-- uniquifying a Negate requires uniquifying its subexpression
+uniquifyExp (Negate exp) state =
+  case uniquifyExp exp state of
+    CState state' (Right res) -> CState state' (Right (Negate res))
+    err                       -> err
 
-uniquifyExp (Negate e) st =
-  case uniquifyExp e st of
-    CState st' (Right e') -> CState st' (Right (Negate e'))
-    CState st' (Left msg) -> CState st' (Left msg)
+uniquifyExp (Add x y) state =
+  case uniquifyExp x state of
+    CState state1 (Right x') ->
+      case uniquifyExp y state1 of
+        CState state2 (Right y') -> CState state2 (Right (Add x' y'))
+        CState state2 (Left msg) -> CState state2 (Left msg)
+    CState state1 (Left msg) -> CState state1 (Left msg)
 
-uniquifyExp (Add e1 e2) st =
-  case uniquifyExp e1 st of
-    CState st1 (Right e1') ->
-      case uniquifyExp e2 st1 of
-        CState st2 (Right e2') -> CState st2 (Right (Add e1' e2'))
-        CState st2 (Left msg)  -> CState st2 (Left msg)
-    CState st1 (Left msg) -> CState st1 (Left msg)
+uniquifyExp (Var sym) state@(UState env _) =
+  case lookupEnv sym env of
+    Just sym' -> CState state (Right (Var sym'))
+    Nothing   -> CState state (Left ("Symbol '" ++ sym ++ "' not found"))
 
-uniquifyExp (Let x rhs body) st =
-  case uniquifyExp rhs st of
-    CState (UState env1 n1) (Right rhs') ->
-      let (x', UState env1' n2) = freshName x (UState env1 n1)
-          env'  = extendEnv x x' env1'
-          stBody = UState env' n2
-      in case uniquifyExp body stBody of
-           CState st' (Right body') -> CState st' (Right (Let x' rhs' body'))
-           CState st' (Left msg)    -> CState st' (Left msg)
-    CState st1 (Left msg) -> CState st1 (Left msg)
+uniquifyExp (Let sym exp body) state =
+  case uniquifyExp exp state of
+    CState (UState env n) (Right exp') ->
+      let newName = "s" ++ show n
+          env'    = extendEnv sym newName env
+          state'  = UState env' (n + 1)
+      in case uniquifyExp body state' of
+           CState stateFinal (Right body') ->
+             CState stateFinal (Right (Let newName exp' body'))
+           CState stateFinal (Left msg) ->
+             CState stateFinal (Left msg)
 
--- Stub for later pass so tests compile
-passRemoveComplexOperas :: CompilerResult s Program -> CompilerResult UniquifyState Program
+    CState state1 (Left msg) ->
+      CState state1 (Left msg)
+
+-- for the RCO pass so the test suite compiles
 passRemoveComplexOperas = error "removeComplexOperas not implemented yet"
