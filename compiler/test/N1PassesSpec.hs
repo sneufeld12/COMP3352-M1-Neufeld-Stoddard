@@ -48,6 +48,22 @@ spec = do
       uniquifyResult (Program (Let "x" (Var "x") (Add (Int 6) (Let "x" (Int 5) (Var "x")))))  `shouldBe`
         Left "Symbol 'x' not found"
 
+    it "propagates errors from right branch of Add" $ do
+      uniquifyResult (Program (Add (Int 5) (Var "nope"))) `shouldBe`
+        Left "Symbol 'nope' not found"
+
+    it "uniquifies deeply nested shadowing" $ do
+      uniquifyResult (Program (Let "x" (Int 1)(Let "x" (Int 2)(Let "x" (Int 3)(Var "x"))))) `shouldBe`
+        Right (Program (Let "s0" (Int 1)(Let "s1" (Int 2)(Let "s2" (Int 3)(Var "s2")))))
+
+    it "uniquifies mixed references across nested lets" $ do
+      uniquifyResult (Program (Let "x" (Int 5)(Let "y" (Var "x")(Let "z" (Var "y")(Add (Var "x") (Var "z")))))) `shouldBe`
+        Right (Program (Let "s0" (Int 5)(Let "s1" (Var "s0")(Let "s2" (Var "s1")(Add (Var "s0") (Var "s2"))))))
+
+    it "does not allow access to shadowed outer variable" $ do
+      uniquifyResult (Program (Let "x" (Int 5)(Let "x" (Int 6)(Var "x")))) `shouldBe`
+        Right (Program (Let "s0" (Int 5)(Let "s1" (Int 6)(Var "s1"))))
+
   describe "Remove complex opera* pass tests:" $ do
     it "can rco on Ints" $ do
       rcoResult (Program (Int 7)) `shouldBe` Right (Program (Int 7))
