@@ -21,8 +21,8 @@ uniquify (Program e) =
 
 -- Generate a fresh variable name
 freshName :: String -> UniquifyState -> (String, UniquifyState)
-freshName x (UState env n) =
-  let x' = x ++ "_" ++ show n
+freshName _ (UState env n) =
+  let x' = "s" ++ show n
   in (x', UState env (n + 1))
 
 -- Core uniquify function
@@ -37,7 +37,7 @@ uniquifyExp Read st =
 uniquifyExp (Var x) st@(UState env _) =
   case lookupEnv x env of
     Just x' -> CState st (Right (Var x'))
-    Nothing -> CState st (Left ("Unbound variable: " ++ x))
+    Nothing -> CState st (Left ("Symbol '" ++ x ++ "' not found"))
 
 uniquifyExp (Negate e) st =
   case uniquifyExp e st of
