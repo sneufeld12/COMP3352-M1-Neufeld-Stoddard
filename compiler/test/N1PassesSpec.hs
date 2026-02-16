@@ -7,7 +7,7 @@ import N1Passes
 import N1
 
 uniquifyResult = getResult . uniquify
-rcoResult prog = getResult (passRemoveComplexOperas (CState 0 (Right prog)))
+rcoResult prog = getRCOResult (passRemoveComplexOperas (CState 0 (Right prog)))
 
 spec :: Spec
 spec = do
@@ -113,3 +113,19 @@ spec = do
     it "can rco on let x = 5 in -(x + -x)" $ do
       rcoResult (Program (Let "x" (Int 5) (Negate (Add (Var "x") (Negate (Var "x")))))) `shouldBe`
         Right (Program (Let "x" (Int 5) (Let "s0" (Negate (Var "x")) (Let "s1" (Add (Var "x") (Var "s0")) (Negate (Var "s1"))))))
+
+    it "can rco on nested Add with all atomic operands" $ do
+      rcoResult (Program (Add (Var "x") (Add (Var "y") (Var "z")))) `shouldBe`
+        Right (Program (Let "s0" (Add (Var "y") (Var "z")) (Add (Var "x") (Var "s0"))))
+
+    it "can rco on triple nested Negate" $ do
+      rcoResult (Program (Negate (Negate (Negate (Int 5))))) `shouldBe`
+        Right (Program (Let "s0" (Negate (Int 5)) (Let "s1" (Negate (Var "s0")) (Negate (Var "s1")))))
+
+    it "can rco on Read inside Add" $ do
+      rcoResult (Program (Add Read (Int 1))) `shouldBe`
+        Right (Program (Let "s0" Read (Add (Var "s0") (Int 1))))
+
+    it "can rco on Add inside Let body with complex binding" $ do
+      rcoResult (Program (Let "x" (Add (Int 1) (Negate (Int 2))) (Add (Var "x") (Int 3)))) `shouldBe`
+        Right (Program (Let "x" (Let "s0" (Negate (Int 2)) (Add (Int 1) (Var "s0"))) (Add (Var "x") (Int 3))))
