@@ -37,6 +37,11 @@ library:
   source-dirs: src
   dependencies:
   - containers
+  - base >= 4.7 && < 5
+  - megaparsec >= 7.0
+  - mtl
+  - text
+  - parser-combinators
 
 # executables:
 #   compiler-exe:
@@ -61,3 +66,11 @@ tests:
     - compiler
     - hspec
     - containers
+    - base >= 4.7 && < 5
+    - megaparsec >= 7.0
+    - mtl
+    - text
+    - parser-combinators
+    - bytestring
+    - optparse-applicative
+

@@ -1,4 +1,4 @@
-module Env
+module NiPasses.Env
   ( Env
   , makeEnv
   , lookupEnv

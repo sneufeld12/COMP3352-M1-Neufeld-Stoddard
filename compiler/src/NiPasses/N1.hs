@@ -1,4 +1,4 @@
-module N1 where
+module NiPasses.N1 where
 
 import Data.Int (Int64)
 

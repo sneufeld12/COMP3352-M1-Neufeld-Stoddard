@@ -1,10 +1,11 @@
-module N1PassesSpec (spec) where
+module NiPasses.N1PassesSpec (spec) where
 
 import Test.Hspec
 import Data.Int
-import CompilerPasses
-import N1Passes
-import N1
+import ComposePasses
+import NiPasses.Uniquify
+import NiPasses.RemoveComplexOperas
+import NiPasses.N1
 
 uniquifyResult = getResult . uniquify
 rcoResult prog = getRCOResult (passRemoveComplexOperas (CState 0 (Right prog)))
