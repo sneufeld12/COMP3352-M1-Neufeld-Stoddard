@@ -15,9 +15,8 @@ import Data.Text.IO as TIO
 -- for setting up debugging
 --import Text.Megaparsec.Debug
 
-import ComposePasses
-import NiPasses.N1
-import CPasses.C0
+import CompilerPasses
+import NiPasses.N1 as Ni
 
 type Parser = Parsec Void Text
 type ParserError = ParseErrorBundle Text Void

@@ -1,6 +1,8 @@
 module CPasses.C0 where
 
-data Atom = Var String | Int Int
+import Data.Int (Int64)
+
+data Atom = Var String | Int Int64
   deriving (Show, Eq)
 
 data Exp

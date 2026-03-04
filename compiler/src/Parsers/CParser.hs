@@ -15,7 +15,7 @@ import Data.Text.IO as TIO
 -- for setting up debugging in the parser
 --import Text.Megaparsec.Debug
 
-import ComposePasses
+import CompilerPasses
 import CPasses.C0 as C
 
 type Parser = Parsec Void Text
@@ -160,8 +160,8 @@ cParseProg = do
 cParseStr :: String -> String --Result C.Tail
 cParseStr str =
   case cParseResult str of
-    Left msg -> show msg
-    Right res -> show res
+    Left msg -> Prelude.show msg
+    Right res -> Prelude.show res
 
 cParseResult :: String -> Result C0
 cParseResult str =

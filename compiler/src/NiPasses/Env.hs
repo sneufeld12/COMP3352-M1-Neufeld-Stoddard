@@ -1,8 +1,9 @@
 module NiPasses.Env
-  ( Env
+  ( Env(..)
   , makeEnv
   , lookupEnv
   , extendEnv
+  , fromList
   ) where
 
 import qualified Data.Map as M
@@ -29,3 +30,7 @@ lookupEnv x (Env m) = M.lookup x m
 -- Extend the environment with a new binding
 extendEnv :: String -> a -> Env a -> Env a
 extendEnv x v (Env m) = Env (M.insert x v m)
+
+-- Create an environment from a list of pairs
+fromList :: [(String, a)] -> Env a
+fromList pairs = Env (M.fromList pairs)
