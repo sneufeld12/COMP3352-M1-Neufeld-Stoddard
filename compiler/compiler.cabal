@@ -37,6 +37,7 @@ library
       Parsers.CParser
       Parsers.NiParser
       X86Passes.AssignHomes
+      X86Passes.Liveness
       X86Passes.PatchInstructions
       X86Passes.WriteToFile
       X86Passes.X86b
@@ -80,6 +81,7 @@ test-suite compiler-test
   other-modules:
       CPasses.C0PassesSpec
       NiPasses.N1PassesSpec
+      X86Passes.LivenessSpec
       X86Passes.X86bPassesSpec
       Paths_compiler
   autogen-modules:
