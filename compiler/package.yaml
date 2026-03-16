@@ -44,6 +44,7 @@ library:
   - parser-combinators
   - hashable
   - optparse-applicative
+  - unordered-containers
 
 executables:
   compiler-exe:
@@ -77,3 +78,4 @@ tests:
     - bytestring
     - optparse-applicative
     - hashable
+    - unordered-containers
